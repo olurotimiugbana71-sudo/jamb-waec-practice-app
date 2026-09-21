@@ -9,7 +9,7 @@ screen, and the free-limit paywall.
 import streamlit as st
 from datetime import date
 
-from config import APP_NAME, FREE_QUESTIONS_PER_DAY, SELAR_SUBJECT_PACK_URL, SITE_URL, SUBJECTS, EXAM_TYPES, GROQ_API_KEY
+from config import APP_NAME, FREE_QUESTIONS_PER_DAY, SELAR_SUBJECT_PACK_URL, SITE_URL, SUBJECTS, EXAM_TYPES
 from question_generator import generate_questions
 
 # ---------------------------------------------------------------------------
@@ -51,10 +51,6 @@ def render_header():
     st.set_page_config(page_title=APP_NAME, page_icon="📘", layout="centered")
     st.title(f"📘 {APP_NAME}")
     st.caption("Free daily JAMB / WAEC / NECO practice, graded instantly by AI.")
-
-    # --- TEMPORARY DEBUG LINE - remove once the key issue is confirmed fixed ---
-    st.write(f"Key loaded: {bool(GROQ_API_KEY)}, length: {len(GROQ_API_KEY)}")
-    # --- END TEMPORARY DEBUG LINE ---
 
 
 def render_setup_screen():
