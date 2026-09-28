@@ -71,6 +71,7 @@ def generate_questions(exam_type, subject, topic, difficulty="Medium", num_quest
         ],
         "temperature": 0.7,
         "response_format": {"type": "json_object"},
+        "max_tokens": min(8000, 200 * num_questions + 500),
     }
 
     try:
