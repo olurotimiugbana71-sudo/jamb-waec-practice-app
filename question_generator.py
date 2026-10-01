@@ -50,6 +50,33 @@ Return JSON in exactly this shape:
 }}
 """
 
+_SUPERSCRIPTS = {"0": "\u2070", "1": "\u00b9", "2": "\u00b2", "3": "\u00b3",
+                 "4": "\u2074", "5": "\u2075", "6": "\u2076", "7": "\u2077",
+                 "8": "\u2078", "9": "\u2079"}
+
+
+def _clean_text(s):
+    """
+    Repairs small AI-generation glitches that have shown up in practice:
+    stray backslash/garbage prefixes like "A.//e ", and "^2" written as a
+    caret instead of a proper superscript. Returns None if the text still
+    looks corrupted after cleanup, so the caller can drop that question.
+    """
+    if not isinstance(s, str):
+        return None
+    s = s.strip()
+
+    # Strip a leading option-letter-like artifact, e.g. "A.//e 2x^2..." -> "2x^2..."
+    s = re.sub(r"^[A-D][.)]\s*(?:/{1,}\s*\w*\s*)?", "", s)
+
+    # Convert simple "^2" / "^12" power notation to real superscript characters
+    s = re.sub(r"\^(\d{1,2})", lambda m: "".join(_SUPERSCRIPTS.get(c, c) for c in m.group(1)), s)
+
+    s = s.strip()
+    if len(s) < 3 or re.search(r"[\\/]{2,}", s):
+        return None
+    return s
+
 
 def _normalize_question(q):
     """
@@ -61,14 +88,20 @@ def _normalize_question(q):
     if not isinstance(q, dict):
         return None
 
-    question = q.get("question")
+    question = _clean_text(q.get("question"))
     options = q.get("options")
     if isinstance(options, list) and len(options) == 4:
         options = dict(zip("ABCD", options))
-    if not isinstance(question, str) or not isinstance(options, dict):
+    if question is None or not isinstance(options, dict):
         return None
 
-    options = {str(k).strip().strip("().:").upper(): str(v) for k, v in options.items()}
+    cleaned_options = {}
+    for k, v in options.items():
+        cleaned_v = _clean_text(str(v))
+        if cleaned_v is None:
+            return None
+        cleaned_options[str(k).strip().strip("().:").upper()] = cleaned_v
+    options = cleaned_options
     if set(options) != set("ABCD"):
         return None
 
@@ -91,11 +124,13 @@ def _normalize_question(q):
     if letter is None:
         return None
 
+    explanation = _clean_text(str(q.get("explanation") or "")) or "No explanation provided."
+
     return {
-        "question": question.strip(),
+        "question": question,
         "options": options,
         "correct_option": letter,
-        "explanation": str(q.get("explanation") or "No explanation provided."),
+        "explanation": explanation,
     }
 
 
